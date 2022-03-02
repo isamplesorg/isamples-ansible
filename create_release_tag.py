@@ -25,7 +25,9 @@ def build_repo(repo_path: str) -> Repo:
     checkout_develop(repo)
     assert not repo.bare
     if repo.is_dirty(untracked_files=False, submodules=False):
-        print(f"Release tagging is only supported on clean repositories.  Repository at path f{repo_path} is dirty.  Exiting.")
+        print(
+            f"Release tagging is only supported on clean repositories.  Repository at path f{repo_path} is dirty.  Exiting."
+        )
         exit(-1)
     return repo
 
@@ -41,22 +43,35 @@ def pick_latest_tag(docker_repo: Repo) -> str:
     return f"{ISAMPLES_TAG_PREFIX}{max_tag_number}"
 
 
-def write_vars_yaml(max_tag: str):
-    with open("vars/common_vars.yml", "r") as yaml_file:
+def write_vars_yaml(max_tag: str, ansible_repo: Repo):
+    vars_path = "vars/common_vars.yml"
+    with open(vars_path, "r") as yaml_file:
         yaml_vars = yaml.full_load(yaml_file)
     yaml_vars["latest_tag"] = max_tag
     with open("vars/common_vars.yml", "w") as writable_yaml_file:
         yaml.dump(yaml_vars, writable_yaml_file)
+    ansible_repo.git.add(vars_path)
+    ansible_repo.index.commit(f"Updated common_vars to tag {max_tag}")
+    tag = ansible_repo.create_tag(
+        max_tag, "main", f"Tagging {max_tag} for iSamples release.", True
+    )
+    print("Pushing isamples-ansible")
+    ansible_repo.remotes.origin.push()
+    ansible_repo.remotes.origin.push(tag)
 
 
 def create_tag(repo: Repo, max_tag: str) -> TagReference:
-    return repo.create_tag(max_tag, "develop", f"Tagging {max_tag} for iSamples release.", True)
+    return repo.create_tag(
+        max_tag, "develop", f"Tagging {max_tag} for iSamples release.", True
+    )
 
 
 @click.command()
 @click.argument(
     "path",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True, writable=True, readable=True),
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, writable=True, readable=True
+    ),
 )
 def main(path: str):
     docker_repo = build_repo(path)
@@ -66,7 +81,9 @@ def main(path: str):
     webui_full_path = os.path.join(path, webui_relative_path)
     webui_repo = build_repo(webui_full_path)
     faceted_relative_path = "src/node_modules/solr-faceted-search-react"
-    solr_faceted_search_repo = build_repo(os.path.join(webui_full_path, faceted_relative_path))
+    solr_faceted_search_repo = build_repo(
+        os.path.join(webui_full_path, faceted_relative_path)
+    )
 
     # Pick the tag number inside the docker repo and distribute to the submodules
     max_tag = pick_latest_tag(docker_repo)
@@ -108,8 +125,8 @@ def main(path: str):
     print("Pushing isamples-docker")
     print(f"Done writing tag {max_tag} for all repositories.")
 
-    write_vars_yaml(max_tag)
-
+    ansible_repo = Repo(".")
+    write_vars_yaml(max_tag, ansible_repo)
 
 
 if __name__ == "__main__":
