@@ -4,7 +4,7 @@ import os.path
 import re
 
 ISAMPLES_TAG_PREFIX = "ISAMPLES-"
-TAG_PATTERN = re.compile(f"{ISAMPLES_TAG_PREFIX}\(\\d+\)")
+TAG_PATTERN = re.compile(f"{ISAMPLES_TAG_PREFIX}(\\d+)")
 
 
 def checkout_develop(repo: Repo):
@@ -34,10 +34,13 @@ def pick_latest_tag(docker_repo: Repo) -> str:
         tag_match = TAG_PATTERN.match(tag.name)
         if tag_match is not None:
             tag_number = int(tag_match.group(1))
-            if tag_number > max_tag_number:
-                max_tag_number = tag_number
+            if tag_number >= max_tag_number:
+                max_tag_number = tag_number + 1
     return f"{ISAMPLES_TAG_PREFIX}{max_tag_number}"
 
+
+def create_tag(repo: Repo, max_tag: str):
+    repo.create_tag(max_tag, "develop", f"Tagging {max_tag} for iSamples release.", True)
 
 @click.command()
 @click.argument(
@@ -46,7 +49,8 @@ def pick_latest_tag(docker_repo: Repo) -> str:
 )
 def main(path: str):
     docker_repo = build_repo(path)
-    isb_repo = build_repo(os.path.join(path, "isb/isamples_inabox"))
+    isb_relative_path = "isb/isamples_inabox"
+    isb_repo = build_repo(os.path.join(path, isb_relative_path))
     webui_relative_path = "isb/isamples_webui"
     webui_full_path = os.path.join(path, webui_relative_path)
     webui_repo = build_repo(webui_full_path)
@@ -55,31 +59,39 @@ def main(path: str):
 
     # Pick the tag number inside the docker repo and distribute to the submodules
     max_tag = pick_latest_tag(docker_repo)
-    print("repo not dirty")
+
     # Start by making a tag in solr_faceted_search, then propagate the submodule commit upward
-    solr_faceted_search_repo.create_tag(max_tag, "develop", f"Tagging {max_tag} for iSamples release.", True)
+    create_tag(solr_faceted_search_repo, max_tag)
     checkout_develop(solr_faceted_search_repo)
-    print("Pushing solr-faceted-search")
+    print("\nPushing solr-faceted-search")
     solr_faceted_search_repo.remotes.origin.push()
 
     # Now that we're done with solr-faceted-search, update the submodule commit in webui
-    print("\n\nUpdating the solr-faceted-search submodule commit in webui")
+    print("Updating the solr-faceted-search submodule commit in webui")
     checkout_develop(webui_repo)
     webui_repo.git.add(faceted_relative_path)
     webui_repo.index.commit(f"Updated solr-faceted-search-react submodule to {max_tag}")
-    webui_repo.create_tag(max_tag, "develop", f"Tagging {max_tag} for iSamples release.", True)
-    print("Pushing webui")
+    create_tag(webui_repo, max_tag)
+    print("Pushing isamples-webui")
     webui_repo.remotes.origin.push()
 
     checkout_develop(isb_repo)
-    isb_repo.create_tag(max_tag, "develop", f"")
+    create_tag(isb_repo, max_tag)
+    print("Pushing isamples-inabox")
+    isb_repo.remotes.origin.push()
 
-    # Now that we're done with webui, update the submodule commit in root
+    # Now that we're done with webui and isb, update the submodule commits for both in Docker
     checkout_develop(docker_repo)
+    print("Updating the isamples_webui submodule commit in isamples-docker")
     docker_repo.git.add(webui_relative_path)
-    docker_repo.index.commit(f"Updated isamples-webui submodule to {max_tag}")
-
-
+    docker_repo.index.commit(f"Updated isamples_webui submodule to {max_tag}")
+    print("Updating the isamples_inabox submodule commit in isamples-docker")
+    docker_repo.git.add(isb_relative_path)
+    docker_repo.index.commit(f"Updated isamples_inabox submodule to {max_tag}")
+    create_tag(docker_repo, max_tag)
+    docker_repo.remotes.origin.push()
+    print("Pushing isamples-docker")
+    print("Done.")
 
 
 if __name__ == "__main__":
