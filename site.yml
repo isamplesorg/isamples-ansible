@@ -1,0 +1,24 @@
+---
+- name: Check out the iSamples Docker repository
+  hosts: all
+  
+  tasks:
+  - name: Check out iSamples Docker Repository
+    git:
+      repo: "https://github.com/isamplesorg/isamples_docker.git"
+      version: "main"
+      track_submodules: no
+      recursive: yes
+      # TODO: this should be using the isamples directory, but having problems getting sudo to work
+      dest: /home/dannymandel/isamples_inabox
+    # become: yes
+    # become_method: su
+    # become_user: isamples
+    # become_flags: "-"
+  
+  - name: Restart iSamples Central
+    service:
+      name: isamples_central
+      state: restarted
+      enabled: yes
+    become: yes
