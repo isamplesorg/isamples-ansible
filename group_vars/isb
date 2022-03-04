@@ -1,0 +1,2 @@
+---
+services: [isb_geome, isb_opencontext, isb_sesar, isb_smithsonian]

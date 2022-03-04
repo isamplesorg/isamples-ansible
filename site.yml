@@ -2,9 +2,6 @@
 - name: Check out the iSamples Docker repository
   hosts: all
   
-  vars_files:
-    - vars/common_vars.yml
-  
   tasks:
   - name: Check out iSamples Docker Repository
     git:
@@ -17,9 +14,11 @@
     become_method: sudo
     become_user: isamples
   
-  - name: Restart iSamples Central
+  - name: Restart iSamples Service
     service:
-      name: isamples_central
+      name: "{{ item }}"
       state: restarted
       enabled: yes
+    with_items:
+      - "{{ services }}"
     become: yes

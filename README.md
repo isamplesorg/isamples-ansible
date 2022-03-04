@@ -15,5 +15,13 @@ Repository for iSamples Ansible scripts
 * Have your iSamples Docker git repo checked out with all the submodules somewhere, then:
 `python create_release_tag.py <PATH>`
   
-## Pushing a release to mars.cyverse.org:
-`ansible-playbook site.yml -i hosts -u <user> -K`
+## Pushing a release to a host group:
+* The host groups are defined in the `hosts` file, and you can specify the group under the limit parameter e.g.:
+`ansible-playbook site.yml -i hosts -u <ssh_user> -K --limit 'isc'`
+* References:  
+  ** https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+  ** https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html
+  
+### Host dependencies:
+* The directory where we check out the project may need to have been manually initialized with git lfs (mars needed manual intervention, hyde did not)
+* `sudo apt install acl/focal`

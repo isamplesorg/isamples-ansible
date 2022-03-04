@@ -1,2 +1,8 @@
-[devservers]
-mars.cyverse.org ansible_port=1657
+[dev]
+mars.cyverse.org
+
+[isb]
+henry.cyverse.org
+
+[isc]
+hyde.cyverse.org
