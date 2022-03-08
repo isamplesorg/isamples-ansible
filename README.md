@@ -12,7 +12,7 @@ Repository for iSamples Ansible scripts
 `ansible all -m ping --ask-pass`
 
 ## Making and pushing a release tag
-* Have your iSamples Docker git repo checked out with all the submodules somewhere, then:
+* Have your iSamples Docker git repo checked out with all the submodules somewhere, then use that directory as the path argument to the python script:
 `python create_release_tag.py <PATH>`
   
 ## Pushing a release to a host group:
@@ -24,4 +24,4 @@ Repository for iSamples Ansible scripts
   
 ### Host dependencies:
 * The directory where we check out the project may need to have been manually initialized with git lfs (mars needed manual intervention, hyde did not)
-* `sudo apt install acl/focal`
+* `sudo apt install acl/focal` -- the acl package is required for ansible to function properly on the remote host
