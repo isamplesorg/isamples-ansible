@@ -1,0 +1,6 @@
+users:
+  - default
+  - name: <insert username for admin account here>
+    sudo:  ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - <insert the contents of your public key file here>

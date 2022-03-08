@@ -25,3 +25,11 @@ Repository for iSamples Ansible scripts
 ### Host dependencies:
 * The directory where we check out the project may need to have been manually initialized with git lfs (mars needed manual intervention, hyde did not)
 * `sudo apt install acl/focal` -- the acl package is required for ansible to function properly on the remote host
+
+## Setting up a multipass VM for ansible to customize
+You can read about multipass here: https://multipass.run
+
+* Install multipass: `brew install --cask multipass`
+* Hand edit the `cloud-init.yaml` file, and insert your user account name and public key contents into the file.
+* Create a test VM: `multipass launch --name isamples-test --cloud-init cloud-init.yaml`
+* ssh to the VM by using the IP address -- you can obtain it by running `multipass info isamples-test`
