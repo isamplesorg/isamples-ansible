@@ -1,0 +1,16 @@
+---
+- name: Configure an iSamples Development server
+  hosts: all
+  
+  tasks:  
+  - name: Create a Docker group
+    group:
+      name: docker
+      state: present
+    become: yes      
+      
+  - name: Create an iSamples user account
+    user: 
+      name: isamples
+      groups: docker
+    become: yes
