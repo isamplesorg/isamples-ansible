@@ -41,18 +41,15 @@
         - gnupg
         - lsb-release
     become: yes
-      
-  - name: Install Docker
-    shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
-    become: yes
-    
-  - name: Install Docker compose
-    shell: mkdir -p /usr/local/lib/docker/cli-plugins &&  curl -SL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-    become: yes
-
-    
+    notify: Install Docker and Docker compose
+        
   - name: Start Docker
     service:
       name: docker
       state: started  
   
+
+  handlers:
+  - name: Install Docker and Docker compose
+    shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && mkdir -p /usr/local/lib/docker/cli-plugins &&  curl -SL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    become: yes
