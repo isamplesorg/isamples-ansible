@@ -14,3 +14,15 @@
       name: isamples
       groups: docker
     become: yes
+    
+  - name: Install nginx
+    apt:
+      name: nginx
+      state: present
+    become: yes
+    
+  - name: Start nginx
+    service:
+      name: nginx
+      state: started
+  
