@@ -30,6 +30,6 @@ Repository for iSamples Ansible scripts
 You can read about multipass here: https://multipass.run
 
 * Install multipass: `brew install --cask multipass`
-* Hand edit the `cloud-init.yaml` file, and insert your user account name, public key, and plaintext password contents into the file.
+* Copy the `cloud-init.yaml.template` file to `cloud-init.yaml`, then insert your user account name, public key, and plaintext password contents into the file.
 * Create a test VM: `multipass launch --name isamples-test --cloud-init cloud-init.yaml`
 * ssh to the VM by using the IP address -- you can obtain it by running `multipass info isamples-test`
