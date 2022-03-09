@@ -25,4 +25,29 @@
     service:
       name: nginx
       state: started
+    become: yes      
+      
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
+    become: yes     
+
+  - name: Install Docker dependencies
+    apt:
+      name:
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+    become: yes
+      
+  - name: Install Docker
+    shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
+    become: yes
+    
+  - name: Start Docker
+    service:
+      name: docker
+      state: started  
   
