@@ -33,3 +33,5 @@ You can read about multipass here: https://multipass.run
 * Copy the `cloud-init.yaml.template` file to `cloud-init.yaml`, then insert your user account name, public key, and plaintext password contents into the file.
 * Create a test VM: `multipass launch --name isamples-test --cloud-init cloud-init.yaml`
 * ssh to the VM by using the IP address -- you can obtain it by running `multipass info isamples-test`
+* Copy `multipass-hosts.yml.template` to `multipass-hosts.yml` and insert the relevant values.
+* Verify you can ping the host with ansible: `ansible -i ./multipass-hosts.yml multipassvm1 -m ping`

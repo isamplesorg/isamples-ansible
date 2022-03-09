@@ -1,0 +1,6 @@
+all:
+  hosts:
+    multipassvm1:
+      ansible_host: <insert IP from multipass info here>
+      ansible_port: 22
+      ansible_user: <insert username for admin account here>

@@ -1,2 +1,3 @@
 # Don't ever check this in -- copy the template file to this path then customize with credentials
 cloud-init.yaml
+multipass-hosts.yml
