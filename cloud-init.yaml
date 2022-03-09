@@ -1,6 +1,9 @@
 users:
   - default
   - name: <insert username for admin account here>
-    sudo:  ALL=(ALL) NOPASSWD:ALL
+    sudo:  ALL=(ALL) ALL
     ssh_authorized_keys:
       - <insert the contents of your public key file here>
+    shell: /bin/bash
+    plain_text_passwd: <insert plaintext password here>
+    lock_passwd: false
