@@ -46,10 +46,34 @@
   - name: Start Docker
     service:
       name: docker
-      state: started  
+      state: started
+      
+  - name: Install iSamples in a Box service
+    copy:
+      src: ./isamples_inabox.service
+      dest: /etc/systemd/system/isamples_inabox.service
+    become: yes
+    notify: Reload systemd
+    
+      
+  - name: Install ACL packages for ansible to run its chmod as necessary
+    apt:
+      name:
+        - acl
+    become: yes    
+    
+  - name: Include the common role, which checks out and starts iSamples in a Box
+    include_role:
+      name: common    
   
 
   handlers:
+    # Instructions gotten from https://docs.docker.com/engine/install/ubuntu/ and https://docs.docker.com/compose/cli-command/
   - name: Install Docker and Docker compose
     shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && mkdir -p /usr/local/lib/docker/cli-plugins &&  curl -SL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    become: yes
+    
+  - name: Reload systemd
+    systemd:
+      daemon-reload: yes
     become: yes
