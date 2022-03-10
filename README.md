@@ -36,3 +36,10 @@ You can read about multipass here: https://multipass.run
 * Copy `multipass-hosts.yml.template` to `multipass-hosts.yml` and insert the relevant values.
 * Verify you can ping the host with ansible: `ansible -i ./multipass-hosts.yml isamplesvm -m ping`
 * Run the host configuration playbook: `ansible-playbook configure_isamples_server.yml -i ./multipass-hosts.yml -K`
+
+### Virtualbox for port forwarding
+In order to get port forwarding to work on the Mac, you need to install virtualbox and tell multipass to use it for networking.
+
+* `sudo multipass set local.driver=virtualbox`
+* You can then configure port forwarding as described on this page: https://multipass.run/docs/using-virtualbox-in-multipass-macos
+* Note that you won't get a standard IP address the way you do with hyperkit -- you'll need to launch VirtualBox, see which port is forwarded, and include that port in `multipass-hosts.yml`.  Since the port is forwarded, you can just set the host to localhost.
