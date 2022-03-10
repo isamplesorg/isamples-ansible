@@ -1,37 +1,33 @@
 ---
 - name: Configure an iSamples Development server
   hosts: all
+  become: yes
   
-  tasks:  
+  tasks:
   - name: Create a Docker group
     group:
       name: docker
       state: present
-    become: yes      
       
   - name: Create an iSamples user account
     user: 
       name: isamples
       groups: docker
-    become: yes
     
   - name: Install nginx
     apt:
       name: nginx
       state: present
-    become: yes
     
   - name: Start nginx
     service:
       name: nginx
-      state: started
-    become: yes      
+      state: started 
       
   - name: Update and upgrade apt packages
     apt:
       upgrade: yes
       update_cache: yes
-    become: yes     
 
   - name: Install Docker dependencies
     apt:
@@ -40,9 +36,18 @@
         - curl
         - gnupg
         - lsb-release
-    become: yes
-    notify: Install Docker and Docker compose
-        
+
+  # Ran into a problem with this when attempting to start the iSamples in a box service in the common role -- it just kept failing with no reasonable error message.  Commenting this out works around that error.
+  # - name: Populate service facts
+  #   service_facts:
+
+    # Instructions gotten from https://docs.docker.com/engine/install/ubuntu/ and https://docs.docker.com/compose/cli-command/
+  - name: Install Docker and Docker compose
+    shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && mkdir -p /usr/local/lib/docker/cli-plugins &&  curl -SL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    notify: Reload systemd
+    # This should only run if not already installed, but see error message above about the service_facts module failing
+    # when: "ansible_facts.services['docker.service'] is not defined"
+    
   - name: Start Docker
     service:
       name: docker
@@ -52,7 +57,6 @@
     copy:
       src: ./isamples_inabox.service
       dest: /etc/systemd/system/isamples_inabox.service
-    become: yes
     notify: Reload systemd
     
       
@@ -60,19 +64,19 @@
     apt:
       name:
         - acl
-    become: yes    
+    
+  - name: Install apt-transport-https
+    apt: name=apt-transport-https state=present
+
+  - name: Add git-lfs package
+    apt: name=git-lfs state=latest update_cache=yes    
     
   - name: Include the common role, which checks out and starts iSamples in a Box
     include_role:
-      name: common    
+      name: common
   
 
   handlers:
-    # Instructions gotten from https://docs.docker.com/engine/install/ubuntu/ and https://docs.docker.com/compose/cli-command/
-  - name: Install Docker and Docker compose
-    shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && mkdir -p /usr/local/lib/docker/cli-plugins &&  curl -SL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-    become: yes
-    
   - name: Reload systemd
     systemd:
       daemon-reload: yes
