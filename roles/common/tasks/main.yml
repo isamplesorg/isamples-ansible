@@ -8,6 +8,12 @@
   become: yes
   become_method: sudo
   become_user: isamples
+  
+- name: Lay down iSB config from template (if defined)
+  template: 
+    src: ../../../.env.isamples_inabox.j2
+    dest: /home/isamples/isamples_inabox/.env.isamples_inabox
+  when: hostname is defined
 
 - name: Restart iSamples Service
   service:
