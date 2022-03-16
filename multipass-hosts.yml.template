@@ -2,5 +2,5 @@ all:
   hosts:
     isamplesvm:
       ansible_host: <insert IP from multipass info here>
-      ansible_port: 22
+      ansible_port: <insert SSH port number from VM here>
       ansible_user: <insert username for admin account here>
