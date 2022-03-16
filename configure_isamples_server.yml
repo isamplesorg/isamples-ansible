@@ -18,16 +18,27 @@
     apt:
       name: nginx
       state: present
-    
-  - name: Start nginx
-    service:
-      name: nginx
-      state: started 
+      
+  - name: Configure ufw with nginx
+    shell: ufw allow "Nginx Full"
       
   - name: Update and upgrade apt packages
     apt:
       upgrade: yes
       update_cache: yes
+
+  - name: Install LetsEncrypt for certificate management
+    apt:
+      name:
+        - python3-certbot-nginx
+        
+  - name: Set up the certbot config in nginx
+    shell: "certbot --nginx -d {{ hostname }} -m {{ certbot_email }} -n --agree-tos --redirect"
+    
+  - name: Start nginx
+    service:
+      name: nginx
+      state: started       
 
   - name: Install Docker dependencies
     apt:

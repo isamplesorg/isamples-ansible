@@ -1,2 +1,4 @@
 ---
 services: [isamples_inabox]
+hostname: isb2.isample.xyz
+certbot_email: danny.mandel@gmail.com
