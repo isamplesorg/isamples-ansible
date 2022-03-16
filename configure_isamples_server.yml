@@ -32,6 +32,11 @@
       name:
         - python3-certbot-nginx
         
+  - name: Lay down default nginx config before running certbot
+    template: 
+      src: ./isamples-ina-box-nginx.j2
+      dest: /etc/nginx/sites-enabled/default
+        
   - name: Set up the certbot config in nginx
     shell: "certbot --nginx -d {{ hostname }} -m {{ certbot_email }} -n --agree-tos --redirect"
     
