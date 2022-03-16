@@ -1,0 +1,4 @@
+---
+services: [isamples_inabox]
+hostname: <insert hostname to configure here, this must be registered via DNS and accessible on port 80 before running the script>
+certbot_email: <insert email for certbot host communication here>
