@@ -35,8 +35,8 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
   * *-K* specifies to prompt for the credentials on the command-line.  The deploy script runs many tasks as root via `sudo`, so the ssh user will need sudo privileges.
   * *--limit 'isc'* specifies to limit the host inventory to the `isc` host group
 * References:  
-  ** https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
-  ** https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html
+  * https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
+  * https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html
 
 ### Host dependencies:
 * The directory where we check out the project may need to have been manually initialized with git lfs (mars needed manual intervention, hyde did not)
