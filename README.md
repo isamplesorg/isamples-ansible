@@ -43,7 +43,7 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 * `sudo apt install acl/focal` -- the acl package is required for ansible to function properly on the remote host
 
 ## Configuring a new iSamples host
-The other ansible playbook is used to configure a new iSamples host with all the host dependencies.  These instructions assume a virtual machine created and running on a local Mac, but there's no reason this ansible playbook couldn't be run on a remote linux server  anywhere.
+The other ansible playbook is used to configure a new iSamples host with all the host dependencies.  These instructions assume a virtual machine created and running on a local Mac, but there's no reason this ansible playbook couldn't be run against a remote linux server anywhere.
 
 ### A note on templates
 There are files checked into the repository with the `.template` extension.  These files must be copied to another file in the same location on the filesystem with the `.template` extension omitted, e.g.
@@ -66,7 +66,7 @@ Multipass is a very handy program for installing and configuring a Linux VM on a
 * Run the host configuration playbook: `ansible-playbook configure_isamples_server.yml -i ./multipass-hosts.yml -K`
 
 ### Virtualbox for port forwarding
-In order to get port forwarding to work on the Mac, you need to install [https://www.virtualbox.org][virtualbox] and tell multipass to use it for networking.
+In order to get port forwarding to work on the Mac, you need to install [virtualbox](https://www.virtualbox.org) and tell multipass to use it for networking.
 
 * `sudo multipass set local.driver=virtualbox`
 * You can then configure port forwarding as described on this page: https://multipass.run/docs/using-virtualbox-in-multipass-macos
