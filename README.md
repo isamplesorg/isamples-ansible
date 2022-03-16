@@ -1,8 +1,8 @@
 # isamples-ansible
-Repository for iSamples [Ansible][https://docs.ansible.com] scripts.  As of this writing, there are two main Ansible playbooks, one for deploying iSamples to existing servers and one for configuring the iSamples software stack on a new server.
+Repository for iSamples [Ansible](https://docs.ansible.com) scripts.  As of this writing, there are two main Ansible playbooks, one for deploying iSamples to existing servers and one for configuring the iSamples software stack on a new server.
 
 ## Configuring the iSamples ansible python virtual environment
-Ansible is based on python, and python is best managed by using virtual environments.  iSamples manages its python dependencies using [poetry][https://python-poetry.org], so it's assumed you have that installed and know how to use python virtual environments.
+Ansible is based on python, and python is best managed by using virtual environments.  iSamples manages its python dependencies using [poetry](https://python-poetry.org), so it's assumed you have that installed and know how to use python virtual environments.
 Step by step:
 * Create a virtualenv:
 `mkvirtualenv isamples-ansible`
@@ -14,7 +14,7 @@ Step by step:
 `ansible all -m ping --ask-pass`
 
 ## Deploying iSamples releases to an existing server
-The first ansible playbook is used to push iSamples releases to one or more existing servers.  The list of server groups to deploy to is contained in the `hosts` [inventory][https://docs.ansible.com/ansible/2.5/user_guide/intro_inventory.html] file.
+The first ansible playbook is used to push iSamples releases to one or more existing servers.  The list of server groups to deploy to is contained in the `hosts` [inventory](https://docs.ansible.com/ansible/2.5/user_guide/intro_inventory.html) file.
 
 ### Making and pushing a release tag
 Before you run the Ansible playbook, you'll want to make a new tag, as we only deploy iSamples releases off the develop branch using a custom tagger script.
@@ -25,19 +25,19 @@ Before you run the Ansible playbook, you'll want to make a new tag, as we only d
 When you run this, it will update the ansible `group_vars/all` file with the latest tag.  Ansible reads this to know which tag to check out on the target server.
 
 ### Pushing a release to a host group:
-After you've made a new tag, you can push it to one of the hose groups by running the `site.yml` Ansible playbook.
+After you've made a new tag, you can push it to one of the host groups by running the `site.yml` Ansible playbook.
 
 * The host groups are defined in the `hosts` file, and you can specify the group under the limit parameter e.g.:
 `ansible-playbook site.yml -i hosts -u <ssh_user> -K --limit 'isc'`
 In that example, we chose the `isc` group, which will push to the iSamples Central host group.  The options are as follows:
-  ** *-i* specifies the inventory file to use
-  ** *-u* specifies the ssh user for the remote host (Ansible runs all communication over ssh)
-  ** *-K* specifies to prompt for the credentials on the command-line.  The deploy script runs many tasks as root via `sudo`, so the ssh user will need sudo privileges.
-  ** *--limit 'isc'* specifies to limit the host inventory to the `isc group`
+  * *-i* specifies the inventory file to use
+  * *-u* specifies the ssh user for the remote host (Ansible runs all communication over ssh)
+  * *-K* specifies to prompt for the credentials on the command-line.  The deploy script runs many tasks as root via `sudo`, so the ssh user will need sudo privileges.
+  * *--limit 'isc'* specifies to limit the host inventory to the `isc` host group
 * References:  
   ** https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
   ** https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html
-  
+
 ### Host dependencies:
 * The directory where we check out the project may need to have been manually initialized with git lfs (mars needed manual intervention, hyde did not)
 * `sudo apt install acl/focal` -- the acl package is required for ansible to function properly on the remote host
@@ -50,9 +50,9 @@ There are files checked into the repository with the `.template` extension.  The
 `cp cloud-init.yaml.template cloud-init.yaml`
 After you copy the file, open it with your favorite text editor and customize before running the playbook.  There are three such files in this repository:
 
-* cloud-init.yaml.template -- specifies details for virtual machine creation, mainly account credentials on the virtual machine
-* group_vars/virtual_machines.template -- specifies details for the https setup with certbot.  You'll need to have configured DNS beforehand, and ensure that port 80 of the IP that resolves the DNS is open for traffic and responding before running certbot.
-* multipass-hosts.yml.template -- specifies details about where the virtual machine is located and which ssh account should be used to hit the VM
+* `cloud-init.yaml.template` -- specifies details for virtual machine creation, mainly account credentials on the virtual machine
+* `group_vars/virtual_machines.template` -- specifies details for the https setup with certbot.  You'll need to have configured DNS beforehand, and ensure that port 80 of the IP that resolves the DNS is open for traffic and responding before running certbot.
+* `multipass-hosts.yml.template` -- specifies details about where the virtual machine is located and which ssh account should be used to hit the VM
 
 ### Setting up a multipass VM for ansible to run against
 Multipass is a very handy program for installing and configuring a Linux VM on a Mac host.  You can read about multipass here: https://multipass.run
