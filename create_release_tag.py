@@ -77,6 +77,8 @@ def main(path: str):
     docker_repo = build_repo(path)
     isb_relative_path = "isb/isamples_inabox"
     isb_repo = build_repo(os.path.join(path, isb_relative_path))
+    elevate_relative_path = "isb/elevate"
+    elevate_repo = build_repo(os.path.join(path, elevate_relative_path))
     webui_relative_path = "isb/isamples_webui"
     webui_full_path = os.path.join(path, webui_relative_path)
     webui_repo = build_repo(webui_full_path)
@@ -110,6 +112,12 @@ def main(path: str):
     print("Pushing isamples-inabox")
     isb_repo.remotes.origin.push()
     isb_repo.remotes.origin.push(tag)
+    
+    checkout_develop(elevate_repo)
+    tag = create_tag(elevate_repo, max_tag)
+    print("Pushing elevate")
+    elevate_repo.remotes.origin.push()
+    elevate_repo.remotes.origin.push(tag)
 
     # Now that we're done with webui and isb, update the submodule commits for both in Docker
     checkout_develop(docker_repo)
@@ -119,6 +127,9 @@ def main(path: str):
     print("Updating the isamples_inabox submodule commit in isamples-docker")
     docker_repo.git.add(isb_relative_path)
     docker_repo.index.commit(f"Updated isamples_inabox submodule to {max_tag}")
+    print("Updating the elevate submodule commit in isamples-docker")
+    docker_repo.git.add(elevate_relative_path)
+    docker_repo.index.commit(f"Updated elevate submodule to {max_tag}")    
     tag = create_tag(docker_repo, max_tag)
     docker_repo.remotes.origin.push()
     docker_repo.remotes.origin.push(tag)
