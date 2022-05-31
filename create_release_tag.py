@@ -21,7 +21,7 @@ def build_repo(repo_path: str, branch: str = "develop") -> Repo:
     origin = repo.remotes.origin
     print(f"Fetching origin for repo {repo_path}")
     origin.fetch()
-    print(f"Checking out develop branch in repo {repo_path}")
+    print(f"Checking out {branch} branch in repo {repo_path}")
     checkout_branch(repo, branch)
     assert not repo.bare
     if repo.is_dirty(untracked_files=False, submodules=False):
@@ -60,9 +60,9 @@ def write_vars_yaml(max_tag: str, ansible_repo: Repo):
     ansible_repo.remotes.origin.push(tag)
 
 
-def create_tag(repo: Repo, max_tag: str) -> TagReference:
+def create_tag(repo: Repo, max_tag: str, branch: str = "develop") -> TagReference:
     return repo.create_tag(
-        max_tag, "develop", f"Tagging {max_tag} for iSamples release.", True
+        max_tag, branch, f"Tagging {max_tag} from branch {branch} for iSamples release.", True
     )
 
 
@@ -102,7 +102,7 @@ def main(path: str):
     checkout_branch(webui_repo, "gh-pages")
     webui_repo.git.add(faceted_relative_path)
     webui_repo.index.commit(f"Updated solr-faceted-search-react submodule to {max_tag}")
-    tag = create_tag(webui_repo, max_tag)
+    tag = create_tag(webui_repo, max_tag, "gh-pages")
     print("Pushing isamples-webui")
     webui_repo.remotes.origin.push()
     webui_repo.remotes.origin.push(tag)
