@@ -82,26 +82,13 @@ def main(path: str):
     webui_relative_path = "isb/isamples_webui"
     webui_full_path = os.path.join(path, webui_relative_path)
     webui_repo = build_repo(webui_full_path, "gh-pages")
-    faceted_relative_path = "src/node_modules/solr-faceted-search-react"
-    solr_faceted_search_repo = build_repo(
-        os.path.join(webui_full_path, faceted_relative_path)
-    )
 
     # Pick the tag number inside the docker repo and distribute to the submodules
     max_tag = pick_latest_tag(docker_repo)
 
-    # Start by making a tag in solr_faceted_search, then propagate the submodule commit upward
-    tag = create_tag(solr_faceted_search_repo, max_tag)
-    checkout_branch(solr_faceted_search_repo)
-    print("\nPushing solr-faceted-search")
-    solr_faceted_search_repo.remotes.origin.push()
-    solr_faceted_search_repo.remotes.origin.push(tag)
-
-    # Now that we're done with solr-faceted-search, update the submodule commit in webui
-    print("Updating the solr-faceted-search submodule commit in webui")
     checkout_branch(webui_repo, "gh-pages")
-    webui_repo.git.add(faceted_relative_path)
-    webui_repo.index.commit(f"Updated solr-faceted-search-react submodule to {max_tag}")
+    # webui_repo.git.add(faceted_relative_path)
+    # webui_repo.index.commit(f"Updated solr-faceted-search-react submodule to {max_tag}")
     tag = create_tag(webui_repo, max_tag, "gh-pages")
     print("Pushing isamples-webui")
     webui_repo.remotes.origin.push()
