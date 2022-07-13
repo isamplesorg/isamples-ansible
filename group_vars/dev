@@ -1,2 +1,2 @@
 ---
-services: [isamples_central]
+services: [isamples_central, isamples_dev]
