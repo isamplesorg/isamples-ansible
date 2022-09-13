@@ -2,34 +2,9 @@ from git import Repo
 from git.refs.tag import TagReference
 import click
 import os.path
-import re
 import yaml
 
-ISAMPLES_TAG_PREFIX = "ISAMPLES-"
-TAG_PATTERN = re.compile(f"{ISAMPLES_TAG_PREFIX}(\\d+)")
-
-
-def checkout_branch(repo: Repo, branch: str = "develop"):
-    git = repo.git
-    git.checkout(branch)
-    git.pull()
-
-
-def build_repo(repo_path: str, branch: str = "develop") -> Repo:
-    repo = Repo(repo_path)
-    print(f"\n#####\nProcessing repository: {repo.remotes.origin.url}")
-    origin = repo.remotes.origin
-    print(f"Fetching origin for repo {repo_path}")
-    origin.fetch()
-    print(f"Checking out {branch} branch in repo {repo_path}")
-    checkout_branch(repo, branch)
-    assert not repo.bare
-    if repo.is_dirty(untracked_files=False, submodules=False):
-        print(
-            f"Release tagging is only supported on clean repositories.  Repository at path f{repo_path} is dirty.  Exiting."
-        )
-        exit(-1)
-    return repo
+from utils import checkout_branch, build_repo
 
 
 def pick_latest_tag(docker_repo: Repo) -> str:
