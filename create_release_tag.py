@@ -4,18 +4,7 @@ import click
 import os.path
 import yaml
 
-from utils import checkout_branch, build_repo
-
-
-def pick_latest_tag(docker_repo: Repo) -> str:
-    max_tag_number = 0
-    for tag in docker_repo.tags:
-        tag_match = TAG_PATTERN.match(tag.name)
-        if tag_match is not None:
-            tag_number = int(tag_match.group(1))
-            if tag_number >= max_tag_number:
-                max_tag_number = tag_number + 1
-    return f"{ISAMPLES_TAG_PREFIX}{max_tag_number}"
+from utils import checkout_branch, build_repo, pick_latest_tag
 
 
 def write_vars_yaml(max_tag: str, ansible_repo: Repo):
