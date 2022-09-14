@@ -1,10 +1,24 @@
+import os.path
 import re
 
 from git import Repo
-from git.refs.tag import TagReference
+
 
 ISAMPLES_TAG_PREFIX = "ISAMPLES-"
 TAG_PATTERN = re.compile(f"{ISAMPLES_TAG_PREFIX}(\\d+)")
+
+ISB_RELATIVE_PATH = "isb/isamples_inabox"
+ELEVATE_RELATIVE_PATH = "isb/elevate"
+WEBUI_RELATIVE_PATH = "isb/isamples_webui"
+
+
+class ISamplesRepos:
+    def __init__(self, path: str):
+        self.docker_repo = build_repo(path)
+        self.isb_repo = build_repo(os.path.join(path, ISB_RELATIVE_PATH))
+        self.elevate_repo = build_repo(os.path.join(path, ELEVATE_RELATIVE_PATH))
+        webui_full_path = os.path.join(path, WEBUI_RELATIVE_PATH)
+        self.webui_repo = build_repo(webui_full_path, "gh-pages")
 
 
 def checkout_branch(repo: Repo, branch: str = "develop"):
@@ -30,7 +44,7 @@ def build_repo(repo_path: str, branch: str = "develop") -> Repo:
     return repo
 
 
-def pick_latest_tag(docker_repo: Repo) -> str:
+def pick_latest_tag(docker_repo: Repo, increment: bool) -> str:
     max_tag_number = 0
     for tag in docker_repo.tags:
         tag_match = TAG_PATTERN.match(tag.name)
@@ -38,4 +52,6 @@ def pick_latest_tag(docker_repo: Repo) -> str:
             tag_number = int(tag_match.group(1))
             if tag_number >= max_tag_number:
                 max_tag_number = tag_number + 1
+    if increment is False:
+        max_tag_number -= 1
     return f"{ISAMPLES_TAG_PREFIX}{max_tag_number}"

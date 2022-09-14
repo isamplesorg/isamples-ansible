@@ -4,7 +4,8 @@ import click
 import os.path
 import yaml
 
-from utils import checkout_branch, build_repo, pick_latest_tag
+from utils import checkout_branch, build_repo, pick_latest_tag, ISamplesRepos, WEBUI_RELATIVE_PATH, ISB_RELATIVE_PATH, \
+    ELEVATE_RELATIVE_PATH
 
 
 def write_vars_yaml(max_tag: str, ansible_repo: Repo):
@@ -38,17 +39,14 @@ def create_tag(repo: Repo, max_tag: str, branch: str = "develop") -> TagReferenc
     ),
 )
 def main(path: str):
-    docker_repo = build_repo(path)
-    isb_relative_path = "isb/isamples_inabox"
-    isb_repo = build_repo(os.path.join(path, isb_relative_path))
-    elevate_relative_path = "isb/elevate"
-    elevate_repo = build_repo(os.path.join(path, elevate_relative_path))
-    webui_relative_path = "isb/isamples_webui"
-    webui_full_path = os.path.join(path, webui_relative_path)
-    webui_repo = build_repo(webui_full_path, "gh-pages")
+    isamples_repos = ISamplesRepos(path)
+    docker_repo = isamples_repos.docker_repo
+    isb_repo = isamples_repos.isb_repo
+    elevate_repo = isamples_repos.elevate_repo
+    webui_repo = isamples_repos.webui_repo
 
     # Pick the tag number inside the docker repo and distribute to the submodules
-    max_tag = pick_latest_tag(docker_repo)
+    max_tag = pick_latest_tag(docker_repo, True)
 
     checkout_branch(webui_repo, "gh-pages")
     # webui_repo.git.add(faceted_relative_path)
@@ -73,13 +71,13 @@ def main(path: str):
     # Now that we're done with webui and isb, update the submodule commits for both in Docker
     checkout_branch(docker_repo)
     print("Updating the isamples_webui submodule commit in isamples-docker")
-    docker_repo.git.add(webui_relative_path)
+    docker_repo.git.add(WEBUI_RELATIVE_PATH)
     docker_repo.index.commit(f"Updated isamples_webui submodule to {max_tag}")
     print("Updating the isamples_inabox submodule commit in isamples-docker")
-    docker_repo.git.add(isb_relative_path)
+    docker_repo.git.add(ISB_RELATIVE_PATH)
     docker_repo.index.commit(f"Updated isamples_inabox submodule to {max_tag}")
     print("Updating the elevate submodule commit in isamples-docker")
-    docker_repo.git.add(elevate_relative_path)
+    docker_repo.git.add(ELEVATE_RELATIVE_PATH)
     docker_repo.index.commit(f"Updated elevate submodule to {max_tag}")    
     tag = create_tag(docker_repo, max_tag)
     docker_repo.remotes.origin.push()

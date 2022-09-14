@@ -1,2 +1,3 @@
 ---
 services: [isamples_central]
+latest_tag: ISAMPLES-MAIN
