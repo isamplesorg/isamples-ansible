@@ -3,9 +3,7 @@ from typing import Optional
 import click
 from git import Repo, TagReference
 
-from utils import ISamplesRepos, pick_latest_tag
-
-MAIN_TAG_NAME = "ISAMPLES-MAIN"
+from utils import ISamplesRepos, pick_latest_tag, MAIN_TAG_NAME, pick_new_main_tag
 
 
 def _cut_tag_and_push(source_tag: str, target_repo: Repo) -> TagReference:
@@ -13,8 +11,12 @@ def _cut_tag_and_push(source_tag: str, target_repo: Repo) -> TagReference:
     target_repo.delete_tag(MAIN_TAG_NAME)
     target_repo.remotes.origin.push(f":{MAIN_TAG_NAME}")
     tag = target_repo.create_tag(MAIN_TAG_NAME, source_tag, commit_msg, True)
+    main_tag_name = pick_new_main_tag(target_repo)
+    commit_msg = f"Creating archival tag {main_tag_name} off of {source_tag} for release"
+    archived_release_tag = target_repo.create_tag(main_tag_name, source_tag, commit_msg, True)
     target_repo.remotes.origin.push()
     target_repo.remotes.origin.push(tag)
+    target_repo.remotes.origin.push(archived_release_tag)
     return tag
 
 

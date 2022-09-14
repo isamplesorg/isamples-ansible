@@ -9,11 +9,11 @@ from utils import checkout_branch, build_repo, pick_latest_tag, ISamplesRepos, W
 
 
 def write_vars_yaml(max_tag: str, ansible_repo: Repo):
-    vars_path = "group_vars/all"
+    vars_path = "group_vars/dev"
     with open(vars_path, "r") as yaml_file:
         yaml_vars = yaml.full_load(yaml_file)
     yaml_vars["latest_tag"] = max_tag
-    with open("group_vars/all", "w") as writable_yaml_file:
+    with open("group_vars/dev", "w") as writable_yaml_file:
         yaml.dump(yaml_vars, writable_yaml_file)
     ansible_repo.git.add(vars_path)
     ansible_repo.index.commit(f"Updated common_vars to tag {max_tag}")
