@@ -16,13 +16,22 @@ Step by step:
 ## Deploying iSamples releases to an existing server
 The first ansible playbook is used to push iSamples releases to one or more existing servers.  The list of server groups to deploy to is contained in the `hosts` [inventory](https://docs.ansible.com/ansible/2.5/user_guide/intro_inventory.html) file.
 
-### Making and pushing a release tag
-Before you run the Ansible playbook, you'll want to make a new tag, as we only deploy iSamples releases off the develop branch using a custom tagger script.
+### Tagging for development servers
+
+Before you run the Ansible playbook, you'll want to make a new tag, as we only deploy iSamples tags to dev off the develop branch using a custom tagger script.
 
 * Have your iSamples Docker git repo checked out with all the submodules somewhere, then use that directory as the path argument to the python tagger script:
 `python create_release_tag.py <PATH>`
 
-When you run this, it will update the ansible `group_vars/all` file with the latest tag.  Ansible reads this to know which tag to check out on the target server.
+When you run this, it will update the ansible `group_vars/dev` file with the latest tag.  Ansible reads this to know which tag to check on the dev server.
+
+### Making and pushing a release tag
+
+After you've deployed the new tag to `dev` and you're happy that it works, you'll want to promote the dev tag to an official release.  Similar to the tagging process for dev,
+you'll want to run a different script on the same local checkout:
+
+* Make sure you've activated the virtual environment running and run `python publish_main_tag.py <PATH>`.  By default, it will promote the last release tag, 
+but you can also specify a specific one using the `--source_tag` argument.
 
 ### Pushing a release to a host group:
 After you've made a new tag, you can push it to one of the host groups by running the `site.yml` Ansible playbook.

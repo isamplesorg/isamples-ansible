@@ -2,53 +2,18 @@ from git import Repo
 from git.refs.tag import TagReference
 import click
 import os.path
-import re
 import yaml
 
-ISAMPLES_TAG_PREFIX = "ISAMPLES-"
-TAG_PATTERN = re.compile(f"{ISAMPLES_TAG_PREFIX}(\\d+)")
-
-
-def checkout_branch(repo: Repo, branch: str = "develop"):
-    git = repo.git
-    git.checkout(branch)
-    git.pull()
-
-
-def build_repo(repo_path: str, branch: str = "develop") -> Repo:
-    repo = Repo(repo_path)
-    print(f"\n#####\nProcessing repository: {repo.remotes.origin.url}")
-    origin = repo.remotes.origin
-    print(f"Fetching origin for repo {repo_path}")
-    origin.fetch()
-    print(f"Checking out {branch} branch in repo {repo_path}")
-    checkout_branch(repo, branch)
-    assert not repo.bare
-    if repo.is_dirty(untracked_files=False, submodules=False):
-        print(
-            f"Release tagging is only supported on clean repositories.  Repository at path f{repo_path} is dirty.  Exiting."
-        )
-        exit(-1)
-    return repo
-
-
-def pick_latest_tag(docker_repo: Repo) -> str:
-    max_tag_number = 0
-    for tag in docker_repo.tags:
-        tag_match = TAG_PATTERN.match(tag.name)
-        if tag_match is not None:
-            tag_number = int(tag_match.group(1))
-            if tag_number >= max_tag_number:
-                max_tag_number = tag_number + 1
-    return f"{ISAMPLES_TAG_PREFIX}{max_tag_number}"
+from utils import checkout_branch, build_repo, pick_latest_tag, ISamplesRepos, WEBUI_RELATIVE_PATH, ISB_RELATIVE_PATH, \
+    ELEVATE_RELATIVE_PATH
 
 
 def write_vars_yaml(max_tag: str, ansible_repo: Repo):
-    vars_path = "group_vars/all"
+    vars_path = "group_vars/dev"
     with open(vars_path, "r") as yaml_file:
         yaml_vars = yaml.full_load(yaml_file)
     yaml_vars["latest_tag"] = max_tag
-    with open("group_vars/all", "w") as writable_yaml_file:
+    with open("group_vars/dev", "w") as writable_yaml_file:
         yaml.dump(yaml_vars, writable_yaml_file)
     ansible_repo.git.add(vars_path)
     ansible_repo.index.commit(f"Updated common_vars to tag {max_tag}")
@@ -74,34 +39,18 @@ def create_tag(repo: Repo, max_tag: str, branch: str = "develop") -> TagReferenc
     ),
 )
 def main(path: str):
-    docker_repo = build_repo(path)
-    isb_relative_path = "isb/isamples_inabox"
-    isb_repo = build_repo(os.path.join(path, isb_relative_path))
-    elevate_relative_path = "isb/elevate"
-    elevate_repo = build_repo(os.path.join(path, elevate_relative_path))
-    webui_relative_path = "isb/isamples_webui"
-    webui_full_path = os.path.join(path, webui_relative_path)
-    webui_repo = build_repo(webui_full_path, "gh-pages")
-    faceted_relative_path = "src/node_modules/solr-faceted-search-react"
-    solr_faceted_search_repo = build_repo(
-        os.path.join(webui_full_path, faceted_relative_path)
-    )
+    isamples_repos = ISamplesRepos(path)
+    docker_repo = isamples_repos.docker_repo
+    isb_repo = isamples_repos.isb_repo
+    elevate_repo = isamples_repos.elevate_repo
+    webui_repo = isamples_repos.webui_repo
 
     # Pick the tag number inside the docker repo and distribute to the submodules
-    max_tag = pick_latest_tag(docker_repo)
+    max_tag = pick_latest_tag(docker_repo, True)
 
-    # Start by making a tag in solr_faceted_search, then propagate the submodule commit upward
-    tag = create_tag(solr_faceted_search_repo, max_tag)
-    checkout_branch(solr_faceted_search_repo)
-    print("\nPushing solr-faceted-search")
-    solr_faceted_search_repo.remotes.origin.push()
-    solr_faceted_search_repo.remotes.origin.push(tag)
-
-    # Now that we're done with solr-faceted-search, update the submodule commit in webui
-    print("Updating the solr-faceted-search submodule commit in webui")
     checkout_branch(webui_repo, "gh-pages")
-    webui_repo.git.add(faceted_relative_path)
-    webui_repo.index.commit(f"Updated solr-faceted-search-react submodule to {max_tag}")
+    # webui_repo.git.add(faceted_relative_path)
+    # webui_repo.index.commit(f"Updated solr-faceted-search-react submodule to {max_tag}")
     tag = create_tag(webui_repo, max_tag, "gh-pages")
     print("Pushing isamples-webui")
     webui_repo.remotes.origin.push()
@@ -122,13 +71,13 @@ def main(path: str):
     # Now that we're done with webui and isb, update the submodule commits for both in Docker
     checkout_branch(docker_repo)
     print("Updating the isamples_webui submodule commit in isamples-docker")
-    docker_repo.git.add(webui_relative_path)
+    docker_repo.git.add(WEBUI_RELATIVE_PATH)
     docker_repo.index.commit(f"Updated isamples_webui submodule to {max_tag}")
     print("Updating the isamples_inabox submodule commit in isamples-docker")
-    docker_repo.git.add(isb_relative_path)
+    docker_repo.git.add(ISB_RELATIVE_PATH)
     docker_repo.index.commit(f"Updated isamples_inabox submodule to {max_tag}")
     print("Updating the elevate submodule commit in isamples-docker")
-    docker_repo.git.add(elevate_relative_path)
+    docker_repo.git.add(ELEVATE_RELATIVE_PATH)
     docker_repo.index.commit(f"Updated elevate submodule to {max_tag}")    
     tag = create_tag(docker_repo, max_tag)
     docker_repo.remotes.origin.push()

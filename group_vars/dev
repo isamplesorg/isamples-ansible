@@ -1,2 +1,4 @@
----
-services: [isamples_central]
+latest_tag: ISAMPLES-64
+services:
+- isamples_central
+- isamples_dev
