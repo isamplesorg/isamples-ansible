@@ -80,3 +80,9 @@ In order to get port forwarding to work on the Mac, you need to install [virtual
 * `sudo multipass set local.driver=virtualbox`
 * You can then configure port forwarding as described on this page: https://multipass.run/docs/using-virtualbox-in-multipass-macos
 * Note that you won't get a standard IP address the way you do with hyperkit -- you'll need to launch VirtualBox, see which port is forwarded, and include that port in `multipass-hosts.yml`.  Since the port is forwarded, you can just set the host to localhost. ![Image of virtualbox ssh port config](virtualbox_port_mapping.png)
+
+### Copying metadata models to the target server
+Due to the large size, the metadata models(that are finetuned BERT models) are not possible to be uploaded in the `isamples_inabox` repository. In order to solve this problem, we need to have the ansible playbook to manually copy the metadata models inside the target server. We have our `roles/common/tasks/main.yml` doing this for us.<br>
+
+* Download and unzip the metadata model folder into `/data/isamples/metadata_models` of the machine that you will run the ansible playbook (or, you can change the `src` value of the `ansible.builtin.copy` command). 
+* Run the ansible playbook, which will allow the `/data/isamples/metadata_models` copied into the `/home/isamples/isamples_inabox/isb/metadata_models` of the target server.

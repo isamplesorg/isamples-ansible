@@ -1,8 +1,7 @@
 - name: Check out iSamples Docker Repository
   git:
     repo: "https://github.com/isamplesorg/isamples_docker.git"
-    # version: "{{ latest_tag }}"
-    version: integrate_models
+    version: "{{ latest_tag }}"
     track_submodules: no
     recursive: yes
     dest: /home/isamples/isamples_inabox
