@@ -15,6 +15,13 @@
     dest: /home/isamples/isamples_inabox/.env.isamples_inabox
   when: hostname is defined
 
+- name: Copy the local metadata models to git
+  ansible.builtin.copy:
+    src:  /data/isamples/metadata_models
+    dest:  /home/isamples/isamples_inabox/isb/metadata_models
+    remote_src: yes
+  become: yes
+
 - name: Restart iSamples Service
   service:
     name: "{{ item }}"
@@ -23,3 +30,8 @@
   with_items:
     - "{{ services }}"
   become: yes
+
+- name: Cleanup metadata models directory
+  file:
+    state: absent
+    path: /home/isamples/isamples_inabox/isb/metadata_models
