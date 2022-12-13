@@ -17,7 +17,7 @@
 
 - name: Copy the local metadata models to git
   ansible.builtin.copy:
-    src:  /data/isamples/metadata_models
+    src:  /var/local/data/models
     dest:  /home/isamples/isamples_inabox/isb/metadata_models
     remote_src: yes
   become: yes
