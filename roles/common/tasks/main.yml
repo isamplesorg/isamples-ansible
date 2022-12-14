@@ -5,6 +5,7 @@
     track_submodules: no
     recursive: yes
     dest: /home/isamples/isamples_inabox
+    force: true
   become: yes
   become_method: sudo
   become_user: isamples
