@@ -10,6 +10,8 @@ Step by step:
 `workon isamples-ansible`
 * Install dependencies using poetry
 `poetry install`
+* Open a poetry shell
+`poetry shell`
 * Make sure it works:
 `ansible all -m ping --ask-pass`
 
@@ -51,7 +53,77 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 * The directory where we check out the project may need to have been manually initialized with git lfs (mars needed manual intervention, hyde did not)
 * `sudo apt install acl/focal` -- the acl package is required for ansible to function properly on the remote host
 
-## Configuring a new iSamples host
+## Configuring a new iSamples host on AWS
+* Create EC2 instance
+	* Create elastic IP, and *assign* it to the ec2 instance you just created.  Those are two distinct steps!
+	* Register DNS to point at elastic IP (https://dns.he.net)
+	* Create security group to allow http and https traffic (https://aws.amazon.com/premiumsupport/knowledge-center/connect-http-https-ec2/)
+* Run all commands us ubuntu user you get out of the box with ec2.  ssh by using the `.pem` file per the instructions in the ec2 console.
+* Manually copy the model files into place (they aren't checked into git) at `/var/local/data/models`
+* Checkout the isamples-ansible repo: `git clone https://github.com/isamplesorg/isamples-ansible.git`
+* `poetry install` then `poetry shell` to get the python environment with all the poetry dependencies available
+* `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- this will fail the first time because the secrets don't exist
+* Manually create the secrets directory inside the git checkout: `cd /home/isamples/isamples_inabox && mkdir secrets && cd secrets && nano <secret_name>`
+* `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- should work this time because you manually created the secrets
+* If you need to debug why docker isn't starting: `sudo su - isamples; cd /home/isamples/isamples_inabox; docker compose --env-file .env.isamples_central up -d --build
+	* Note that the nginx config needs to match the paths specified in the isamples environment file you specify in the docker command.  This is an easy way to get things out of whack.
+* Manually dump the database on a known good instance: `pg_dump --data-only --dbname="isb_1" --host="localhost" --port=5432 --username=isb_writer > ./isamples.SQL`
+* Load that database back up on the new instance: `psql -U isb_writer -d isb_1 -f isamples.SQL`
+* Run the solr indexer in the iSB container:
+	* `docker exec -it isamples_inabox-isamples_inabox-1 bash`
+		* export PYTHONPATH=/app
+		* `python scripts/smithsonian_things.py --config ./isb.cfg populate_isb_core_solr`
+		
+	
+###
+Things that were broken when I was configuring the new host:
+* Ansible group_vars had the wrong tag so we deployed an old incorrect version of things
+* The ansible playbook had things configured to use `isamples_inabox` instead of `isamples_central`
+* Various minor changes needed to be made to the playbook to get it to point at a localhost instead of a VM:
+```
+ubuntu@ip-172-31-86-122:~/isamples-ansible$ git diff
+diff --git a/configure_isamples_server.yml b/configure_isamples_server.yml
+index 654023b..67c99b3 100644
+--- a/configure_isamples_server.yml
++++ b/configure_isamples_server.yml
+@@ -1,6 +1,7 @@
+ ---
+ - name: Configure an iSamples Development server
+-  hosts: all
++  hosts: localhost
++  connection: local
+   become: yes
+   
+   tasks:
+@@ -99,4 +100,4 @@
+   - name: Reload systemd
+     systemd:
+       daemon-reload: yes
+-    become: yes
+\ No newline at end of file
++    become: yes
+diff --git a/group_vars/all b/group_vars/all
+index 46521e9..4a02c4f 100644
+--- a/group_vars/all
++++ b/group_vars/all
+@@ -1,2 +1,5 @@
+ ansible_port: 1657
+-latest_tag: ISAMPLES-63
++latest_tag: ISAMPLES-68
++services: [isamples_inabox]
++hostname: iscaws.isample.xyz
++certbot_email: danny.mandel@gmail.com
+diff --git a/hosts b/hosts
+index e7de9aa..01a930d 100644
+--- a/hosts
++++ b/hosts
+@@ -1,3 +1,6 @@
++[localhost]
++localhost
++
+```
+
+## Configuring a new iSamples host with a virtual machine
 The other ansible playbook is used to configure a new iSamples host with all the host dependencies.  These instructions assume a virtual machine created and running on a local Mac, but there's no reason this ansible playbook couldn't be run against a remote linux server anywhere.
 
 ### A note on templates
