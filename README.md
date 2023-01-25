@@ -60,6 +60,7 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 	* Create security group to allow http and https traffic (https://aws.amazon.com/premiumsupport/knowledge-center/connect-http-https-ec2/)
 * Run all commands us ubuntu user you get out of the box with ec2.  ssh by using the `.pem` file per the instructions in the ec2 console.
 * Manually copy the model files into place (they aren't checked into git) at `/var/local/data/models`
+  * You can rsync them from mars.cyverse.org: `rsync -avz -e 'ssh -p 1657' dannymandel@mars.cyverse.org:/var/local/data/models/ /var/local/data/models/`
 * Checkout the isamples-ansible repo: `git clone https://github.com/isamplesorg/isamples-ansible.git`
 * `poetry install` then `poetry shell` to get the python environment with all the poetry dependencies available
 * `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- this will fail the first time because the secrets don't exist

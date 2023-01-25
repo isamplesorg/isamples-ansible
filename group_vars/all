@@ -1,2 +1,5 @@
 ansible_port: 1657
-latest_tag: ISAMPLES-63
+latest_tag: ISAMPLES-68
+services: [isamples_inabox]
+hostname: iscaws.isample.xyz
+certbot_email: danny.mandel@gmail.com
