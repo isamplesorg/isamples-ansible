@@ -56,7 +56,6 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 ## Configuring a new iSamples host on AWS
 * Create EC2 instance
 	* Create elastic IP, and *assign* it to the ec2 instance you just created.  Those are two distinct steps!
-	* Register DNS to point at elastic IP (https://dns.he.net)
 	* Create security group to allow http and https traffic (https://aws.amazon.com/premiumsupport/knowledge-center/connect-http-https-ec2/)
 * Run all commands us ubuntu user you get out of the box with ec2.  ssh by using the `.pem` file per the instructions in the ec2 console.
 * Manually copy the model files into place (they aren't checked into git) at `/var/local/data/models`
@@ -65,7 +64,18 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 	* Copy all the models into the docker volume after the instance is brought up for the first time: `sudo docker cp /var/local/data/models/OPENCONTEXT_material_config.json isamples_inabox-isamples_inabox-1:/app/metadata_models`
 * Checkout the isamples-ansible repo: `git clone https://github.com/isamplesorg/isamples-ansible.git`
 * `poetry install` then `poetry shell` to get the python environment with all the poetry dependencies available
-* `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- this will fail the first time because the secrets don't exist
+* Set up the URLs to work properly on the new instance:
+	* Register DNS to point at elastic IP (https://dns.he.net)
+	* Make local changes for various bits of config for the ansible settings
+	  * In the ansible repo, you need to change the hostname variable in group_vars/all, e.g. `hostname: iscaws.isample.xyz`
+		* In the ansible repo, the built-in `systemd` service name is `isamples_inabox`, e.g.: `services: [isamples_inabox]`
+		* In the ansible repo, you need to add your email for certbot registration in group_vars/all, e.g. `certbot_email: danny.mandel@gmail.com`
+		* In the ansible repo, you *may* need to change the redirect URL in `isamples-ina-box-nginx.j2`.  By default, it redirects all `nginx` requests to `<hostname>/isamples_inabox`.  Note that when you get to the Docker config there is a separate bit of config for this and the Docker config will need to match what you choose in this step.  The lines in the nginx config look like this: 
+			```
+    location /isamples_inabox/ {
+    rewrite /isamples_inabox/(.*)  /$1  break;			
+			```  Make sure this matches up with whatever URL pattern you want to use for your instance.
+* `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- this will fail the first time because the secrets don't exist and various bits of Docker config need to be edited.
 * Manually create the secrets directory inside the git checkout: `cd /home/isamples/isamples_inabox && mkdir secrets && cd secrets && nano <secret_name>`
 * `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- should work this time because you manually created the secrets
 * If you need to debug why docker isn't starting: `sudo su - isamples; cd /home/isamples/isamples_inabox; docker compose --env-file .env.isamples_central up -d --build
