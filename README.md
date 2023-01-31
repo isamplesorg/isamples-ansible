@@ -71,10 +71,7 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 		* In the ansible repo, the built-in `systemd` service name is `isamples_inabox`, e.g.: `services: [isamples_inabox]`
 		* In the ansible repo, you need to add your email for certbot registration in group_vars/all, e.g. `certbot_email: danny.mandel@gmail.com`
 		* In the ansible repo, you *may* need to change the redirect URL in `isamples-ina-box-nginx.j2`.  By default, it redirects all `nginx` requests to `<hostname>/isamples_inabox`.  Note that when you get to the Docker config there is a separate bit of config for this and the Docker config will need to match what you choose in this step.  The lines in the nginx config look like this: 
-			```
-    location /isamples_inabox/ {
-    rewrite /isamples_inabox/(.*)  /$1  break;			
-			```  Make sure this matches up with whatever URL pattern you want to use for your instance.
+			```location /isamples_inabox/ { rewrite /isamples_inabox/(.*)  /$1  break;```  Make sure this matches up with whatever URL pattern you want to use for your instance.
 * `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- this will fail the first time because the secrets don't exist and various bits of Docker config need to be edited.
 * Manually create the secrets directory inside the git checkout: `cd /home/isamples/isamples_inabox && mkdir secrets && cd secrets && nano <secret_name>`
 * `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- should work this time because you manually created the secrets
@@ -86,55 +83,6 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 	* `docker exec -it isamples_inabox-isamples_inabox-1 bash`
 		* export PYTHONPATH=/app
 		* `python scripts/smithsonian_things.py --config ./isb.cfg populate_isb_core_solr`
-		
-	
-###
-Things that were broken when I was configuring the new host:
-* Ansible group_vars had the wrong tag so we deployed an old incorrect version of things
-* The ansible playbook had things configured to use `isamples_inabox` instead of `isamples_central`
-* Various minor changes needed to be made to the playbook to get it to point at a localhost instead of a VM:
-```
-ubuntu@ip-172-31-86-122:~/isamples-ansible$ git diff
-diff --git a/configure_isamples_server.yml b/configure_isamples_server.yml
-index 654023b..67c99b3 100644
---- a/configure_isamples_server.yml
-+++ b/configure_isamples_server.yml
-@@ -1,6 +1,7 @@
- ---
- - name: Configure an iSamples Development server
--  hosts: all
-+  hosts: localhost
-+  connection: local
-   become: yes
-   
-   tasks:
-@@ -99,4 +100,4 @@
-   - name: Reload systemd
-     systemd:
-       daemon-reload: yes
--    become: yes
-\ No newline at end of file
-+    become: yes
-diff --git a/group_vars/all b/group_vars/all
-index 46521e9..4a02c4f 100644
---- a/group_vars/all
-+++ b/group_vars/all
-@@ -1,2 +1,5 @@
- ansible_port: 1657
--latest_tag: ISAMPLES-63
-+latest_tag: ISAMPLES-68
-+services: [isamples_inabox]
-+hostname: iscaws.isample.xyz
-+certbot_email: danny.mandel@gmail.com
-diff --git a/hosts b/hosts
-index e7de9aa..01a930d 100644
---- a/hosts
-+++ b/hosts
-@@ -1,3 +1,6 @@
-+[localhost]
-+localhost
-+
-```
 
 ## Configuring a new iSamples host with a virtual machine
 The other ansible playbook is used to configure a new iSamples host with all the host dependencies.  These instructions assume a virtual machine created and running on a local Mac, but there's no reason this ansible playbook couldn't be run against a remote linux server anywhere.
