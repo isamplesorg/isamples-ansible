@@ -41,7 +41,7 @@
         
   - name: Lay down default nginx config before running certbot
     template: 
-      src: ./isamples-ina-box-nginx.j2
+      src: ./plausible-nginx.j2
       dest: /etc/nginx/sites-enabled/default
         
   - name: Set up the certbot config in nginx
