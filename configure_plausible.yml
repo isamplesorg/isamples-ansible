@@ -5,12 +5,9 @@
   become: yes
   
   tasks:
-  - name: Download the plausible installation
-    shell: "git clone https://github.com/plausible/hosting"
-  
   - name: Check out the Plausible self-hosted repository
     git:
-      repo: " https://github.com/plausible/hosting"
+      repo: https://github.com/plausible/hosting
       dest: /home/isamples/plausible_hosting
       force: true
     become: yes
@@ -30,9 +27,15 @@
     
   - name: Install plausible service
     copy:
-      src: ./plausible_io.service
+      src: ./plausible-io.service
       dest: /etc/systemd/system/plausible_io.service
     notify: Reload systemd
     
   - name: Set up the certbot config in nginx
     shell: "certbot --nginx -d metricsaws.isample.xyz -m danny.mandel@gmail.com -n --agree-tos --redirect"
+
+  handlers:
+  - name: Reload systemd
+    systemd:
+      daemon-reload: yes
+    become: yes    

@@ -57,7 +57,7 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 * Create EC2 instance
 	* Create elastic IP, and *assign* it to the ec2 instance you just created.  Those are two distinct steps!
 	* Create security group to allow http and https traffic (https://aws.amazon.com/premiumsupport/knowledge-center/connect-http-https-ec2/)
-* Run all commands us ubuntu user you get out of the box with ec2.  ssh by using the `.pem` file per the instructions in the ec2 console.
+* Run all commands as ubuntu user you get out of the box with ec2.  ssh by using the `.pem` file per the instructions in the ec2 console.
 * Checkout the isamples-ansible repo: `git clone https://github.com/isamplesorg/isamples-ansible.git`
 * `poetry install` then `poetry shell` to get the python environment with all the poetry dependencies available
 * Set up the URLs to work properly on the new instance:
@@ -87,6 +87,27 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 		* export PYTHONPATH=/app
 		* `python scripts/smithsonian_things.py --config ./isb.cfg populate_isb_core_solr`
 * Ping the URL to be able to see data: http://hostname/fragment/thing/select (e.g. https://iscaws.isample.xyz/isamples_central/thing/select)
+* (Optional) Set up plausible by running the ansible setup script: `ansible-playbook configure_plausible.yml -i hosts --limit 'localhost'`
+	* Set up DNS for the plausible instance on (https://dns.he.net)
+	* Manually update the nginx config on the host with the following config in the section corresponding to the plausible host:
+	```
+  location / {
+    proxy_set_header Host $http_host;
+    #proxy_set_header Host $host;
+    #proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Scheme $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "Upgrade";
+    # proxy_set_header Connection $connection_upgrade;
+    proxy_set_header   X-Real-IP $remote_addr;
+    proxy_set_header   X-Forwarded-Host $server_name;
+    proxy_redirect off;
+    proxy_buffering off;
+    proxy_http_version 1.1;
+    proxy_pass http://localhost:8788;
+    }
+	```
 
 ## Configuring a new iSamples host with a virtual machine
 The other ansible playbook is used to configure a new iSamples host with all the host dependencies.  These instructions assume a virtual machine created and running on a local Mac, but there's no reason this ansible playbook couldn't be run against a remote linux server anywhere.
