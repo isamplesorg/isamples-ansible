@@ -59,9 +59,11 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 	* Create security group to allow http and https traffic (https://aws.amazon.com/premiumsupport/knowledge-center/connect-http-https-ec2/)
 * Run all commands as ubuntu user you get out of the box with ec2.  ssh by using the `.pem` file per the instructions in the ec2 console.
 * Checkout the isamples-ansible repo: `git clone https://github.com/isamplesorg/isamples-ansible.git`
-* `poetry install` then `poetry shell` to get the python environment with all the poetry dependencies available
+* Install poetry: `curl -sSL https://install.python-poetry.org | python3 -`
+* `poetry shell` then `poetry install` to get the python environment with all the poetry dependencies available
 * Set up the URLs to work properly on the new instance:
 	* Register DNS to point at elastic IP (https://dns.he.net)
+	* Make sure the ansible group_vars/all hostname points to the hostname you configured in DNS
 	* Make local changes for various bits of config for the ansible settings
 	  * In the ansible repo, you need to change the hostname variable in group_vars/all, e.g. `hostname: iscaws.isample.xyz`
 		* In the ansible repo, the built-in `systemd` service name is `isamples_inabox`, e.g.: `services: [isamples_inabox]`
@@ -78,6 +80,7 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 * Manually edit the Docker config in the Docker checkout in the iSamples user directory.  Note that by default the `systemd` service will use the `.env.isamples_inabox` file.  Some variables you may want to change:
   * `UVICORN_ROOT_PATH=isamples_central` -- This is the URL fragment after the hostname.  *MAKE SURE* it matches te value you used in the nginx config up above.
 	* `ISB_HOST=iscaws.isample.xyz` -- This is the hostname you'll use when the Docker container starts up.  *MAKE SURE* it matches the value you used in the Ansible group_vars up above.
+	* For analytics integration, edit the following two variables: `ANALYTICS_URL = "https://metrics.isample.xyz/api/event"` `ANALYTICS_DOMAIN = "isamplescentral.isamples.org"`
 * If you need to debug why docker isn't starting: `sudo su - isamples; cd /home/isamples/isamples_inabox; docker compose --env-file .env.isamples_central up -d --build
 	* Note that the nginx config needs to match the paths specified in the isamples environment file you specify in the docker command.  This is an easy way to get things out of whack.
 * Manually dump the database on a known good instance: `pg_dump --data-only --dbname="isb_1" --host="localhost" --port=5432 --username=isb_writer > ./isamples.SQL`

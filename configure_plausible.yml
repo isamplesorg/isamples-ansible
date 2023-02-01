@@ -5,6 +5,77 @@
   become: yes
   
   tasks:
+  - name: Create a Docker group
+    group:
+      name: docker
+      state: present
+      
+  - name: Create an iSamples user account
+    user: 
+      name: isamples
+      groups: docker
+      shell: /bin/bash
+      
+  - name: Install ACL packages for ansible to run its chmod as necessary
+    apt:
+      name:
+        - acl
+    
+  - name: Install nginx
+    apt:
+      name: nginx
+      state: present
+      
+  - name: Configure ufw with nginx
+    shell: ufw allow "Nginx Full"
+      
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
+
+  - name: Install LetsEncrypt for certificate management
+    apt:
+      name:
+        - python3-certbot-nginx
+        
+  - name: Lay down default nginx config before running certbot
+    template: 
+      src: ./isamples-ina-box-nginx.j2
+      dest: /etc/nginx/sites-enabled/default
+        
+  - name: Set up the certbot config in nginx
+    shell: "certbot --nginx -d {{ hostname }} -m {{ certbot_email }} -n --agree-tos --redirect"
+    
+  - name: Start nginx
+    service:
+      name: nginx
+      state: started       
+
+  - name: Install Docker dependencies
+    apt:
+      name:
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+
+  # Ran into a problem with this when attempting to start the iSamples in a box service in the common role -- it just kept failing with no reasonable error message.  Commenting this out works around that error.
+  # - name: Populate service facts
+  #   service_facts:
+
+    # Instructions gotten from https://docs.docker.com/engine/install/ubuntu/ and https://docs.docker.com/compose/cli-command/
+  - name: Install Docker and Docker compose
+    shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && mkdir -p /usr/local/lib/docker/cli-plugins &&  curl -SL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && chmod +x /usr/local/lib/docker/cl>
+    args:
+      creates: /usr/local/lib/docker/cli-plugins/docker-compose
+    notify: Reload systemd
+    
+  - name: Start Docker
+    service:
+      name: docker
+      state: started        
+    
   - name: Check out the Plausible self-hosted repository
     git:
       repo: https://github.com/plausible/hosting
@@ -31,11 +102,9 @@
       dest: /etc/systemd/system/plausible_io.service
     notify: Reload systemd
     
-  - name: Set up the certbot config in nginx
-    shell: "certbot --nginx -d metricsaws.isample.xyz -m danny.mandel@gmail.com -n --agree-tos --redirect"
 
   handlers:
   - name: Reload systemd
     systemd:
       daemon-reload: yes
-    become: yes    
+    become: yes
