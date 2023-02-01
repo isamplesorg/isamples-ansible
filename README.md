@@ -89,6 +89,7 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
 * Ping the URL to be able to see data: http://hostname/fragment/thing/select (e.g. https://iscaws.isample.xyz/isamples_central/thing/select)
 * (Optional) Set up plausible by running the ansible setup script: `ansible-playbook configure_plausible.yml -i hosts --limit 'localhost'`
 	* Set up DNS for the plausible instance on (https://dns.he.net)
+	* Need to manually edit the docker-compose.yml in the local checkout (/home/isamples/plausible_hosting/docker-compose.yml) to set the port to 8788 (plausible has it set to 8000): `- 8788:8788`
 	* Manually update the nginx config on the host with the following config in the section corresponding to the plausible host:
 	```
   location / {
