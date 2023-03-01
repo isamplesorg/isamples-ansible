@@ -1,0 +1,4 @@
+---
+ansible_port: 22
+services: [isamples_inabox]
+latest_tag: ISAMPLES-MAIN
