@@ -49,6 +49,21 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
   * https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
   * https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html
 
+#### Using an ssh key file instead of prompting for a password
+If you want to use a key file instead of prompting for a password, the command looks like this:
+
+```
+ansible-playbook site.yml -i hosts  -u ubuntu --limit 'aws'
+```
+And you'll need to use an ssh agent before doing that, something like so:
+
+```
+ssh-agent bash
+ssh-add ~/Downloads/isamples\ key\ pair.pem
+```
+
+You could test that part by manually issuing an ssh command and checking that it succeeds before running the ansible script.
+
 ### Host dependencies:
 * The directory where we check out the project may need to have been manually initialized with git lfs (mars needed manual intervention, hyde did not)
 * `sudo apt install acl/focal` -- the acl package is required for ansible to function properly on the remote host
