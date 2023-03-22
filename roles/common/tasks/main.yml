@@ -16,6 +16,20 @@
 #    dest: /home/isamples/isamples_inabox/.env.isamples_inabox
 #  when: hostname is defined
 
+- name: Create empty secrets directory -- things won't function but they should allow the container to come up
+  ansible.builtin.file:
+    path: /home/isamples/isamples_inabox/secrets
+    state: directory
+  become: yes
+    
+- name: Touch all the individual secrets in the directory
+  ansible.builtin.file:
+    path: /home/isamples/isamples_inabox/secrets/"{{ item }}"
+    state: touch
+  with_items:
+    - "{{ secrets }}"
+  become: yes
+
 - name: Copy the local metadata models to git
   ansible.builtin.copy:
     src:  /var/local/data/models
