@@ -14,6 +14,7 @@
     user: 
       name: isamples
       groups: docker
+      shell: /bin/bash
       
   - name: Update and upgrade apt packages
     apt:
