@@ -27,7 +27,7 @@
     path: /home/isamples/isamples_inabox/secrets/{{ item }}
     state: touch
   with_items:
-    - {{ secrets }}
+    - "{{ secrets }}"
   become: yes
 
 - name: Copy the local metadata models to git
