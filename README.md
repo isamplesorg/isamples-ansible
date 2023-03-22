@@ -90,7 +90,6 @@ You could test that part by manually issuing an ssh command and checking that it
   * You can rsync them from mars.cyverse.org: `rsync -avz -e 'ssh -p 1657' dannymandel@mars.cyverse.org:/var/local/data/models/ /var/local/data/models/`
 	* Manually create a docker volume for the models `docker volume create metadata_models`
 	* Copy all the models into the docker volume after the instance is brought up for the first time: `sudo docker cp /var/local/data/models/OPENCONTEXT_material_config.json isamples_inabox-isamples_inabox-1:/app/metadata_models`
-* Manually create the secrets directory inside the git checkout: `cd /home/isamples/isamples_inabox && mkdir secrets && cd secrets && nano <secret_name>`
 * `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- should work this time because you manually created the secrets
 * Manually edit the Docker config in the Docker checkout in the iSamples user directory.  Note that by default the `systemd` service will use the `.env.isamples_inabox` file.  Some variables you may want to change:
   * `UVICORN_ROOT_PATH=isamples_central` -- This is the URL fragment after the hostname.  *MAKE SURE* it matches te value you used in the nginx config up above.
@@ -105,6 +104,16 @@ You could test that part by manually issuing an ssh command and checking that it
 		* export PYTHONPATH=/app
 		* `python scripts/smithsonian_things.py --config ./isb.cfg populate_isb_core_solr`
 * Ping the URL to be able to see data: http://hostname/fragment/thing/select (e.g. https://iscaws.isample.xyz/isamples_central/thing/select)
+
+### Backing up an existing solr instance
+* In source solr container: `mkdir /var/solr/data/backup`
+* In source host: `curl "http://localhost:8984/solr/admin/collections?action=BACKUP&name=isb_core_records_backup&collection=isb_core_records&location=file:///var/solr/data/backup"`
+* In source solr container: `tar czvf isb_core_records_backup.tgz isb_core_records_backup`
+* In source host: `docker cp isamples_inabox-solr-1:/var/solr/data/backup/isb_core_records_backup.tgz .`
+* In target host: `scp ubuntu@iscaws.isample.xyz:~/isb_core_records_backup.tgz .`
+* In target solr container: `mkdir /var/solr/data/backup`
+* In target host: `docker cp ./isb_core_records_backup.tgz isamples_inabox-solr-1:/var/solr/data/backup`
+* In target solr container: `curl "http://localhost:8983/solr/admin/collections?action=RESTORE&name=isb_core_records_backup&collection=isb_core_records&location=file:///var/solr/data/backup"`
 
 ## Setting up plausible io metrics server
 * Create EC2 instance
