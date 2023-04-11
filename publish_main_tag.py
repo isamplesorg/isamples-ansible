@@ -8,8 +8,11 @@ from utils import ISamplesRepos, pick_latest_tag, MAIN_TAG_NAME, pick_new_main_t
 
 def _cut_tag_and_push(source_tag: str, target_repo: Repo) -> TagReference:
     commit_msg = f"Moving {MAIN_TAG_NAME} to point to {source_tag} for release"
-    target_repo.delete_tag(MAIN_TAG_NAME)
-    target_repo.remotes.origin.push(f":{MAIN_TAG_NAME}")
+    try:
+        target_repo.delete_tag(MAIN_TAG_NAME)
+        target_repo.remotes.origin.push(f":{MAIN_TAG_NAME}")
+    except:
+        print("Unable to delete remote tag, continuing.")
     tag = target_repo.create_tag(MAIN_TAG_NAME, source_tag, commit_msg, True)
     main_tag_name = pick_new_main_tag(target_repo)
     commit_msg = f"Creating archival tag {main_tag_name} off of {source_tag} for release"
