@@ -1,5 +1,5 @@
 ---
-- name: Configure an iSamples Development server
+- name: Configure plausible.io self-hosted solution on a server
   hosts: localhost
   connection: local
   become: yes
@@ -16,10 +16,10 @@
       groups: docker
       shell: /bin/bash
       
-  - name: Update and upgrade apt packages
+  - name: Install ACL packages for ansible to run its chmod as necessary
     apt:
-      upgrade: yes
-      update_cache: yes      
+      name:
+        - acl
     
   - name: Install nginx
     apt:
@@ -28,6 +28,11 @@
       
   - name: Configure ufw with nginx
     shell: ufw allow "Nginx Full"
+      
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: yes
+      update_cache: yes
 
   - name: Install LetsEncrypt for certificate management
     apt:
@@ -36,7 +41,7 @@
         
   - name: Lay down default nginx config before running certbot
     template: 
-      src: ./isamples-ina-box-nginx.j2
+      src: ./plausible-nginx.j2
       dest: /etc/nginx/sites-enabled/default
         
   - name: Set up the certbot config in nginx
@@ -45,12 +50,7 @@
   - name: Start nginx
     service:
       name: nginx
-      state: started
-      
-  - name: Create the models directory, since they aren't checked into git
-    ansible.builtin.file:
-      path: /var/local/data/models/
-      state: directory
+      state: started       
 
   - name: Install Docker dependencies
     apt:
@@ -66,41 +66,42 @@
 
     # Instructions gotten from https://docs.docker.com/engine/install/ubuntu/ and https://docs.docker.com/compose/cli-command/
   - name: Install Docker and Docker compose
-    shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && mkdir -p /usr/local/lib/docker/cli-plugins &&  curl -SL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    shell: cd ~ && curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh && mkdir -p /usr/local/lib/docker/cli-plugins &&  curl -SL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose && chmod +x /usr/local/lib/docker/cl>
     args:
       creates: /usr/local/lib/docker/cli-plugins/docker-compose
     notify: Reload systemd
     
-    # This should only run if not already installed, but see error message above about the service_facts module failing
-    # when: "ansible_facts.services['docker.service'] is not defined"
-    
   - name: Start Docker
     service:
       name: docker
-      state: started
-      
-  - name: Install iSamples in a Box service
+      state: started        
+    
+  - name: Check out the Plausible self-hosted repository
+    git:
+      repo: https://github.com/plausible/hosting
+      dest: /home/isamples/plausible_hosting
+      force: true
+    become: yes
+    become_method: sudo
+    become_user: isamples
+    
+  - name: Generate the secret key
+    shell: openssl rand -base64 64 | tr -d '\n' >> plausible-conf.env
+    
+  - name: Copy the plausible config to the plausible checkout directory
     copy:
-      src: ./isamples_inabox.service
-      dest: /etc/systemd/system/isamples_inabox.service
+      src: ./plausible-conf.env
+      dest: /home/isamples/plausible_hosting
+    become: yes
+    become_method: sudo
+    become_user: isamples      
+    
+  - name: Install plausible service
+    copy:
+      src: ./plausible-io.service
+      dest: /etc/systemd/system/plausible_io.service
     notify: Reload systemd
     
-      
-  - name: Install ACL packages for ansible to run its chmod as necessary
-    apt:
-      name:
-        - acl
-    
-  - name: Install apt-transport-https
-    apt: name=apt-transport-https state=present
-
-  - name: Add git-lfs package
-    apt: name=git-lfs state=latest update_cache=yes    
-    
-  - name: Include the common role, which checks out and starts iSamples in a Box
-    include_role:
-      name: common
-  
 
   handlers:
   - name: Reload systemd

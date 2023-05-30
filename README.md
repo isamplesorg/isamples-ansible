@@ -10,6 +10,8 @@ Step by step:
 `workon isamples-ansible`
 * Install dependencies using poetry
 `poetry install`
+* Open a poetry shell
+`poetry shell`
 * Make sure it works:
 `ansible all -m ping --ask-pass`
 
@@ -47,11 +49,88 @@ In that example, we chose the `isc` group, which will push to the iSamples Centr
   * https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html
   * https://docs.ansible.com/ansible/latest/user_guide/intro_patterns.html
 
+#### Using an ssh key file instead of prompting for a password
+If you want to use a key file instead of prompting for a password, the command looks like this:
+
+```
+ansible-playbook site.yml -i hosts  -u ubuntu --limit 'aws'
+```
+And you'll need to use an ssh agent before doing that, something like so:
+
+```
+ssh-agent bash
+ssh-add ~/Downloads/isamples\ key\ pair.pem
+```
+
+You could test that part by manually issuing an ssh command and checking that it succeeds before running the ansible script.
+
 ### Host dependencies:
 * The directory where we check out the project may need to have been manually initialized with git lfs (mars needed manual intervention, hyde did not)
 * `sudo apt install acl/focal` -- the acl package is required for ansible to function properly on the remote host
 
-## Configuring a new iSamples host
+## Configuring a new iSamples host on AWS
+* Create EC2 instance
+	* Create elastic IP, and *assign* it to the ec2 instance you just created.  Those are two distinct steps!
+	* Create security group to allow http and https traffic (https://aws.amazon.com/premiumsupport/knowledge-center/connect-http-https-ec2/)
+* Run all commands as ubuntu user you get out of the box with ec2.  ssh by using the `.pem` file per the instructions in the ec2 console.
+* Checkout the isamples-ansible repo: `git clone https://github.com/isamplesorg/isamples-ansible.git`
+* Install poetry: `curl -sSL https://install.python-poetry.org | python3 -`
+* `poetry shell` then `poetry install` to get the python environment with all the poetry dependencies available
+* Set up the URLs to work properly on the new instance:
+	* Register DNS to point at elastic IP (https://dns.he.net)
+	* Make sure the ansible group_vars/all hostname points to the hostname you configured in DNS
+	* Make local changes for various bits of config for the ansible settings
+	  * In the ansible repo, you need to change the hostname variable in group_vars/all, e.g. `hostname: iscaws.isample.xyz`
+		* In the ansible repo, the built-in `systemd` service name is `isamples_inabox`, e.g.: `services: [isamples_inabox]`
+		* In the ansible repo, you need to add your email for certbot registration in group_vars/all, e.g. `certbot_email: danny.mandel@gmail.com`
+		* In the ansible repo, you *may* need to change the redirect URL in `isamples-ina-box-nginx.j2`.  By default, it redirects all `nginx` requests to `<hostname>/isamples_inabox`.  Note that when you get to the Docker config there is a separate bit of config for this and the Docker config will need to match what you choose in this step.  The lines in the nginx config look like this: 
+			```location /isamples_inabox/ { rewrite /isamples_inabox/(.*)  /$1  break;```  Make sure this matches up with whatever URL pattern you want to use for your instance.
+* `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- this will fail the first time because the secrets don't exist and various bits of Docker config need to be edited.
+* Manually copy the model files into place (they aren't checked into git) at `/var/local/data/models`
+  * You can rsync them from mars.cyverse.org: `rsync -avz -e 'ssh -p 1657' dannymandel@mars.cyverse.org:/var/local/data/models/ /var/local/data/models/`
+	* Manually create a docker volume for the models `docker volume create metadata_models`
+	* Copy all the models into the docker volume after the instance is brought up for the first time: `sudo docker cp /var/local/data/models/OPENCONTEXT_material_config.json isamples_inabox-isamples_inabox-1:/app/metadata_models`
+* `ansible-playbook configure_isamples_server.yml -i hosts --limit 'localhost'` -- should work this time because you manually created the secrets
+* Manually edit the Docker config in the Docker checkout in the iSamples user directory.  Note that by default the `systemd` service will use the `.env.isamples_inabox` file.  Some variables you may want to change:
+  * `UVICORN_ROOT_PATH=isamples_central` -- This is the URL fragment after the hostname.  *MAKE SURE* it matches te value you used in the nginx config up above.
+	* `ISB_HOST=iscaws.isample.xyz` -- This is the hostname you'll use when the Docker container starts up.  *MAKE SURE* it matches the value you used in the Ansible group_vars up above.
+	* For analytics integration, edit the following two variables: `ANALYTICS_URL = "https://metrics.isample.xyz/api/event"` `ANALYTICS_DOMAIN = "isamplescentral.isamples.org"`
+* If you need to debug why docker isn't starting: `sudo su - isamples; cd /home/isamples/isamples_inabox; docker compose --env-file .env.isamples_central up -d --build
+	* Note that the nginx config needs to match the paths specified in the isamples environment file you specify in the docker command.  This is an easy way to get things out of whack.
+* Manually dump the database on a known good instance: `pg_dump --data-only --dbname="isb_1" --host="localhost" --port=5432 --username=isb_writer > ./isamples.SQL`
+* Load that database back up on the new instance: `psql -U isb_writer -d isb_1 -f isamples.SQL`
+* Run the solr indexer in the iSB container:
+	* `docker exec -it isamples_inabox-isamples_inabox-1 bash`
+		* export PYTHONPATH=/app
+		* `python scripts/smithsonian_things.py --config ./isb.cfg populate_isb_core_solr`
+* Ping the URL to be able to see data: http://hostname/fragment/thing/select (e.g. https://iscaws.isample.xyz/isamples_central/thing/select)
+
+### Backing up an existing solr instance
+* In source solr container: `mkdir /var/solr/data/backup`
+* In source host: `curl "http://localhost:8984/solr/admin/collections?action=BACKUP&name=isb_core_records_backup&collection=isb_core_records&location=file:///var/solr/data/backup"`
+* In source solr container: `tar czvf isb_core_records_backup.tgz isb_core_records_backup`
+* In source host: `docker cp isamples_inabox-solr-1:/var/solr/data/backup/isb_core_records_backup.tgz .`
+* In target host: `scp ubuntu@iscaws.isample.xyz:~/isb_core_records_backup.tgz .`
+* In target solr container: `mkdir /var/solr/data/backup`
+* In target host: `docker cp ./isb_core_records_backup.tgz isamples_inabox-solr-1:/var/solr/data/backup`
+* In target solr container: `curl "http://localhost:8983/solr/admin/collections?action=RESTORE&name=isb_core_records_backup&collection=isb_core_records&location=file:///var/solr/data/backup"`
+
+## Setting up plausible io metrics server
+* Create EC2 instance
+	* Create elastic IP, and *assign* it to the ec2 instance you just created.  Those are two distinct steps!
+	* Create security group to allow http and https traffic (https://aws.amazon.com/premiumsupport/knowledge-center/connect-http-https-ec2/)
+* Run all commands as ubuntu user you get out of the box with ec2.  ssh by using the `.pem` file per the instructions in the ec2 console.
+* Checkout the isamples-ansible repo: `git clone https://github.com/isamplesorg/isamples-ansible.git`
+* Install poetry: `curl -sSL https://install.python-poetry.org | python3 -`
+* `poetry shell` then `poetry install` to get the python environment with all the poetry dependencies available
+* Set up DNS for the plausible instance on (https://dns.he.net)
+* In the ansible repo, you need to change the hostname variable in group_vars/all, e.g. `hostname: iscaws.isample.xyz`
+* In the ansible repo, you need to add your email for certbot registration in group_vars/all, e.g. `certbot_email: danny.mandel@gmail.com`
+* Edit the `plausible-conf.env` file in a shell using a text editor, and make sure to provide values for the the following variables: `ADMIN_USER_EMAIL`, `ADMIN_USER_NAME`, `ADMIN_USER_PWD`, `BASE_URL`
+* Set up plausible by running the ansible setup script: `ansible-playbook configure_plausible.yml -i hosts --limit 'localhost'`
+* Note that for data to flow into the system, you'll need to create a new domain in plausible that matches up with the `ANALYTICS_DOMAIN` you have configured in iSamples in a Box.  You'll also need to make sure that the `ANALYTICS_URL` in iSamples in a box properly points to the plausible hostname you just configured in this step.
+
+## Configuring a new iSamples host with a virtual machine
 The other ansible playbook is used to configure a new iSamples host with all the host dependencies.  These instructions assume a virtual machine created and running on a local Mac, but there's no reason this ansible playbook couldn't be run against a remote linux server anywhere.
 
 ### A note on templates
@@ -80,3 +159,9 @@ In order to get port forwarding to work on the Mac, you need to install [virtual
 * `sudo multipass set local.driver=virtualbox`
 * You can then configure port forwarding as described on this page: https://multipass.run/docs/using-virtualbox-in-multipass-macos
 * Note that you won't get a standard IP address the way you do with hyperkit -- you'll need to launch VirtualBox, see which port is forwarded, and include that port in `multipass-hosts.yml`.  Since the port is forwarded, you can just set the host to localhost. ![Image of virtualbox ssh port config](virtualbox_port_mapping.png)
+
+### Copying metadata models to the target server
+Due to the large size, the metadata models(that are finetuned BERT models) are not possible to be uploaded in the `isamples_inabox` repository. In order to solve this problem, we need to have the ansible playbook to manually copy the metadata models inside the target server. We have our `roles/common/tasks/main.yml` doing this for us.<br>
+
+* Download and unzip the metadata model folder into `/data/isamples/metadata_models` of the machine that you will run the ansible playbook (or, you can change the `src` value of the `ansible.builtin.copy` command). 
+* Run the ansible playbook, which will allow the `/data/isamples/metadata_models` copied into the `/home/isamples/isamples_inabox/isb/metadata_models` of the target server.

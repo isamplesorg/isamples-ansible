@@ -5,15 +5,37 @@
     track_submodules: no
     recursive: yes
     dest: /home/isamples/isamples_inabox
+    force: true
   become: yes
   become_method: sudo
   become_user: isamples
   
-- name: Lay down iSB config from template (if defined)
-  template: 
-    src: ../../../.env.isamples_inabox.j2
-    dest: /home/isamples/isamples_inabox/.env.isamples_inabox
-  when: hostname is defined
+#- name: Lay down iSB config from template (if defined)
+#  template: 
+#    src: ../../../.env.isamples_inabox.j2
+#    dest: /home/isamples/isamples_inabox/.env.isamples_inabox
+#  when: hostname is defined
+
+- name: Create empty secrets directory -- things won't function but they should allow the container to come up
+  ansible.builtin.file:
+    path: /home/isamples/isamples_inabox/secrets
+    state: directory
+  become: yes
+    
+- name: Touch all the individual secrets in the directory
+  ansible.builtin.file:
+    path: /home/isamples/isamples_inabox/secrets/{{ item }}
+    state: touch
+  with_items:
+    - "{{ secrets }}"
+  become: yes
+
+- name: Copy the local metadata models to git
+  ansible.builtin.copy:
+    src:  /var/local/data/models
+    dest:  /home/isamples/isamples_inabox/isb/metadata_models
+    remote_src: yes
+  become: yes
 
 - name: Restart iSamples Service
   service:
@@ -23,3 +45,8 @@
   with_items:
     - "{{ services }}"
   become: yes
+
+- name: Cleanup metadata models directory
+  file:
+    state: absent
+    path: /home/isamples/isamples_inabox/isb/metadata_models

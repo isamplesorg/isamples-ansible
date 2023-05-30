@@ -78,22 +78,33 @@ server {
     # as directory, then fall back to displaying a 404.
     try_files $uri $uri/ =404;
   }
+}
 
-  location /isamples_central/ {
-    rewrite /isamples_central/(.*)  /$1  break;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-Scheme $scheme;
-    proxy_set_header X-Forwarded-Host $server_name;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "Upgrade";
-    proxy_redirect off;
-    proxy_buffering off;
-    proxy_http_version 1.1;
-    proxy_pass http://localhost:8000;
-  }  
+server {
+  server_name {{ hostname }};
+  
+    location / {
+      proxy_set_header Host $http_host;
+      #proxy_set_header Host $host;
+      #proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header X-Forwarded-Scheme $scheme;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "Upgrade";
+      # proxy_set_header Connection $connection_upgrade;
+      proxy_set_header   X-Real-IP $remote_addr;
+      proxy_set_header   X-Forwarded-Host $server_name;
+      proxy_redirect off;
+      proxy_buffering off;
+      proxy_http_version 1.1;
+      proxy_pass http://localhost:8788;
+      }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/metricsaws.isample.xyz/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/metricsaws.isample.xyz/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 }
 
 
