@@ -2,5 +2,5 @@ ansible_port: 1657
 latest_tag: ISAMPLES-68
 services: [isamples_inabox]
 hostname: iscaws.isample.xyz
-secrets: [datacite_password, datacite_username, orcid_client_id, orcid_client_secret]
+secrets: [datacite_password, datacite_username, orcid_client_id, orcid_client_secret, hypothesis_jwt_client_id, hypothesis_jwt_client_secret]
 certbot_email: danny.mandel@gmail.com
