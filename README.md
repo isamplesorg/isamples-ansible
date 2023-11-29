@@ -36,6 +36,9 @@ you'll want to run a different script on the same local checkout:
 but you can also specify a specific one using the `--source_tag` argument.
 
 ### Pushing a release to a host group:
+
+IMPORTANT: Make sure you have already set up ssh passwordless access before you try running the playbook.  The `-K` option is only for authenticating user once already on the machine.
+
 After you've made a new tag, you can push it to one of the host groups by running the `site.yml` Ansible playbook.
 
 * The host groups are defined in the `hosts` file, and you can specify the group under the limit parameter e.g.:
