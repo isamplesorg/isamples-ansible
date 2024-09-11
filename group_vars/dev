@@ -1,4 +1,4 @@
-latest_tag: ISAMPLES-127
+latest_tag: ISAMPLES-128
 services:
 - isamples_central
 - isamples_dev
